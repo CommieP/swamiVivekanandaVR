@@ -1,0 +1,69 @@
+html, body {
+    margin: 0;
+    height: 100%;
+    overflow: hidden;
+}
+
+#c {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+#loadingScreen {
+    display: inline-block;
+    background: rgba(0, 0, 0, 1);
+    position: absolute;
+    top: 0vh;
+    left: 0vw;
+    width: 100vw;
+    height: 100vh;
+    padding: 1vw;;
+    font-family: Calibri;
+    font-weight: 400;
+    font-size: 2.5vh;
+    font-style: normal;
+    color: white;
+}
+
+#loadingPercent {
+    position: absolute;
+    top: 45%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: greenyellow;
+    font-family: "Calibri";
+    font-size: 3vh;
+}
+
+#loadingFiles {
+    position: absolute;
+    top: 55%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: greenyellow;
+    font-family: "Calibri";
+    font-size: 3vh;
+}
+
+#loadingBar {
+    position: absolute;
+    width: 20vw;
+    height: 3vh;
+    border: 5px solid greenyellow;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    justify-content: left;
+    padding-left: 0.5vh;
+    padding-right: 0.5vh;
+}
+
+#loadingProgress {
+    width: 100%;
+    height: 2vh;
+    background-color: greenyellow;
+}
+

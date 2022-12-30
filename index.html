@@ -1,0 +1,237 @@
+<html>
+    <head>
+
+        <title>GVH</title>
+
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+
+        <link type="text/css" rel="stylesheet" href="css/main.css">
+        <script src="https://code.jquery.com/jquery-3.6.0.js" integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk=" crossorigin="anonymous"></script>
+    </head>
+
+    <body>
+
+        <canvas id="c"></canvas>
+
+        <div id="loadingScreen">
+            <div id="loadingPercent">Loading... 0%</div>
+            <div id = "loadingBar">
+                <div id = "loadingProgress"></div>
+            </div>
+            <div id="loadingFiles">0 of 0 files Loaded</div>
+        </div>
+
+        <script async src="https://unpkg.com/es-module-shims@1.3.6/dist/es-module-shims.js"></script>
+
+        <script type="importmap">
+            {
+                "imports": {
+                "three": "https://unpkg.com/three@0.146.0/build/three.module.js"
+                }
+            }
+        </script>
+
+        <script type="module">
+
+            const loadingScreen = $("#loadingScreen");
+            const loadingProgress = $("#loadingProgress");
+            const loadingPercent = $("#loadingPercent");
+            const loadingFiles = $("#loadingFiles");
+
+            //Module imports
+            import * as THREE from 'three';
+
+            import {GLTFLoader} from 'https://unpkg.com/three@0.146.0/examples/jsm/loaders/GLTFLoader.js';
+            import {VRButton} from 'https://unpkg.com/three@0.146.0/examples/jsm/webxr/VRButton.js';
+
+            const clock = new THREE.Clock();
+
+            // Canvas Initialization
+            const canvas = document.querySelector('#c');
+            const renderer  = new THREE.WebGLRenderer({canvas, antialias: true});
+            renderer.setSize(window.innerWidth, window.innerHeight, false );
+            renderer.outputEncoding = THREE.sRGBEncoding;
+            renderer.xr.enabled = true;
+            document.body.appendChild(VRButton.createButton(renderer));
+
+            // Scene Initialization
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color( 0x87CEEB );
+
+            // Camera Initialization
+            const fov = 70;
+            const aspect = (window.innerWidth/ window.innerHeight);
+            const near = 0.0001;
+            const far = 500;
+
+            const camera = new THREE.PerspectiveCamera( 65, screen.width / screen.height, 0.1, 1000);
+            camera.rotation.order = 'YXZ';
+            let vrCamera = new THREE.Group();
+            scene.add(vrCamera);
+            vrCamera.position.set(0, 0.5, 0)
+            vrCamera.add(camera);
+
+            let playerOnFloor = false;
+
+            const light = new THREE.AmbientLight( 0xffffff, 0.2 ); // soft white light
+			scene.add( light );
+
+			const lightTarget = new THREE.Object3D;
+			lightTarget.position.set(0.6, 0.25 , -12.5 );
+			scene.add(lightTarget);
+
+			const dLight1 = new THREE.DirectionalLight( 0xffffff, 1 );
+			dLight1.position.set(0, 50, 0);
+			dLight1.target = lightTarget;
+			scene.add( dLight1 );
+
+            const playerVelocity = new THREE.Vector3();
+            const playerDirection = new THREE.Vector3();
+
+            const manager = new THREE.LoadingManager();
+            manager.onStart = function ( url, itemsLoaded, itemsTotal ) {
+                loadingProgress.css("width", "0%");
+                loadingPercent.text("Loading... 0%");
+                loadingFiles.text(String(itemsLoaded) + " of " + String(itemsTotal) + " files loaded");
+            };
+
+            manager.onLoad = function ( ) {
+                if(loadingScreen.css("display") != "none"){
+                            loadingScreen.css("display", "none");
+                        }
+                console.log( 'Loading complete!');
+            };
+
+
+            manager.onProgress = function ( url, itemsLoaded, itemsTotal ) {
+                let percent = String(Math.floor((itemsLoaded/itemsTotal)*100))+"%";
+                loadingProgress.css("width", percent);
+                loadingPercent.text("Loading... " + percent);
+                loadingFiles.text(String(itemsLoaded) + " of " + String(itemsTotal) + " files loaded");
+            };
+
+            manager.onError = function ( url ) {
+
+                console.log( 'There was an error loading ' + url );
+
+            };
+
+            const textureLoader = new THREE.TextureLoader(manager);
+
+            const skyTexture = textureLoader.load("./models/sky.jpg",
+                () => { 
+                const rt = new THREE.WebGLCubeRenderTarget(skyTexture.image.height);
+                rt.fromEquirectangularTexture(renderer, skyTexture);
+                scene.background = rt.texture;
+            });
+
+
+            const gltfLoader = new GLTFLoader(manager).setPath( './models/' );
+
+            const url = 'scene6.glb';
+			gltfLoader.load(url, (gltf) => {
+				const root = gltf.scene;
+				scene.add(root);
+				console.log(root);
+				root.position.set(0, -1, -10);
+				let scale = 2;
+				// root.rotation.y = Math.PI/2
+				root.scale.set(scale, scale, scale);
+			});
+
+			const url1 = 'swami1.glb';
+			gltfLoader.load(url1, (gltf) => {
+				const root = gltf.scene;
+				scene.add(root);
+				console.log(root);
+				root.position.set(15, -2.07, -25);
+				let scale = 5;
+				root.rotation.y = -Math.PI/2
+				root.scale.set(scale, scale, scale);
+			});
+
+            let speed = 0.5;
+
+            function getForwardVector() {
+                renderer.xr.getCamera(camera).getWorldDirection( playerDirection );
+                playerDirection.y = 0;
+                playerDirection.normalize();
+
+                let currentCameraPos = new THREE.Vector3(camera.position.x, camera.position.y, camera.position.z);
+
+                return playerDirection;
+            }
+
+            function getSideVector() {
+                renderer.xr.getCamera(camera).getWorldDirection( playerDirection );
+                playerDirection.y = 0;
+                playerDirection.normalize();
+                playerDirection.cross( camera.up );
+
+                return playerDirection;
+
+            }
+
+            function update(deltaTime, z, x) {
+                if (z){
+                    playerVelocity.add(getForwardVector().multiplyScalar( speed * deltaTime * -z)); 
+                }
+                if (x){
+                    playerVelocity.add(getSideVector().multiplyScalar( speed * deltaTime * x)); 
+                }	
+
+                const damping = Math.exp( - 5 * deltaTime ) - 1;
+                playerVelocity.addScaledVector( playerVelocity, damping );
+
+                vrCamera.position.z += playerVelocity.z;
+                vrCamera.position.x += playerVelocity.x;
+            }
+
+            function render() {
+                const deltaTime = Math.min( 0.1, clock.getDelta() );
+
+                let currentCameraPos = new THREE.Vector3(camera.position.x, camera.position.y, camera.position.z);
+                let currentCameraDirection = new THREE.Vector3;
+                camera.getWorldDirection(currentCameraDirection);
+
+                let session = renderer.xr.getSession();
+                
+                let z;
+                let x;
+
+                if(session){
+                    if(session.inputSources){
+                        if (session.inputSources.length > 0){
+                            z = session.inputSources[0].gamepad.axes[3];
+                            x = session.inputSources[0].gamepad.axes[2];
+                            if(session.inputSources[0].gamepad.buttons[4].pressed){
+                                    vrCamera.position.y -= 0.005
+                                }
+
+                            if(session.inputSources[0].gamepad.buttons[5].pressed){
+                                vrCamera.position.y += 0.005
+                            }
+
+                            let x1 = session.inputSources[1].gamepad.axes[2];
+                            console.log(x1)
+                            if(x1){
+                                vrCamera.rotation.y -= x1*deltaTime
+                            }
+                        }
+                    }
+                }
+                
+                update(deltaTime, z, x);
+
+                renderer.render( scene, camera );
+            }
+
+            function animate() {
+                renderer.setAnimationLoop(render);
+            }
+
+            animate();
+        </script>
+    </body>
+</html>    
