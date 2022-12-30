@@ -206,11 +206,11 @@
                             z = session.inputSources[0].gamepad.axes[3];
                             x = session.inputSources[0].gamepad.axes[2];
                             if(session.inputSources[0].gamepad.buttons[4].pressed){
-                                    vrCamera.position.y -= 0.005
+                                    vrCamera.position.y -= deltaTime*0.05
                                 }
 
                             if(session.inputSources[0].gamepad.buttons[5].pressed){
-                                vrCamera.position.y += 0.005
+                                vrCamera.position.y += deltaTime*0.05
                             }
 
                             let x1 = session.inputSources[1].gamepad.axes[2];
